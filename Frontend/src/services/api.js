@@ -7,7 +7,7 @@ const API_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:5000/api';
 console.log('API URL:', API_URL); // For debugging
 
 export const recordsAPI = {
-  // Get all records
+  // Get all records with optional filters
   getAll: async (params = {}) => {
     try {
       const response = await axios.get(`${API_URL}/records`, { params });
@@ -45,10 +45,15 @@ export const recordsAPI = {
     }
   },
   
-  // Update record
-  update: async (id, data) => {
+  // Update record (can include new images)
+  update: async (id, formData) => {
     try {
-      const response = await axios.put(`${API_URL}/records/${id}`, data);
+      const response = await axios.put(`${API_URL}/records/${id}`, formData, {
+        headers: formData instanceof FormData ? { 
+          'Content-Type': 'multipart/form-data'
+        } : {},
+        timeout: 30000
+      });
       return response.data;
     } catch (error) {
       console.error('Error updating record:', error.response?.data || error.message);
@@ -63,6 +68,17 @@ export const recordsAPI = {
       return response.data;
     } catch (error) {
       console.error('Error deleting record:', error.response?.data || error.message);
+      throw error;
+    }
+  },
+
+  // Get statistics
+  getStats: async () => {
+    try {
+      const response = await axios.get(`${API_URL}/records/stats`);
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching stats:', error.response?.data || error.message);
       throw error;
     }
   }

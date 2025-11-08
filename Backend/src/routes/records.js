@@ -18,7 +18,7 @@ router.get('/stats', getStats);
 router.post('/', upload.array('images', 10), createRecord);
 router.get('/', getAllRecords);
 router.get('/:id', getRecordById);
-router.put('/:id', updateRecord);
+router.put('/:id', upload.array('images', 10), updateRecord);
 router.delete('/:id', deleteRecord);
 
 export default router;

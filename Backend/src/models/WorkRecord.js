@@ -37,6 +37,8 @@ const workRecordSchema = new mongoose.Schema({
 
 // Index for faster queries
 workRecordSchema.index({ createdAt: -1 });
+workRecordSchema.index({ billAmount: 1 });
+workRecordSchema.index({ title: 'text', description: 'text' }); // Text index for search
 
 // Virtual for formatted date
 workRecordSchema.virtual('formattedDate').get(function() {

@@ -7,6 +7,7 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import HomeScreen from './src/screens/HomeScreen';
 import AddRecordScreen from './src/screens/AddRecordScreen';
 import RecordDetailScreen from './src/screens/RecordDetailScreen';
+import EditRecordScreen from './src/screens/EditRecordScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -46,6 +47,13 @@ export default function App() {
             component={RecordDetailScreen}
             options={{
               title: 'Record Details',
+            }}
+          />
+          <Stack.Screen
+            name="EditRecord"
+            component={EditRecordScreen}
+            options={{
+              title: 'Edit Record',
             }}
           />
         </Stack.Navigator>

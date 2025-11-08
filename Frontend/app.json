@@ -44,6 +44,14 @@
         {
           "cameraPermission": "Allow Work Records to access your camera to take work photos"
         }
+      ],
+      [
+        "expo-media-library",
+        {
+          "photosPermission": "Allow Work Records to access your photo library",
+          "savePhotosPermission": "Allow Work Records to save images to your photo library",
+          "isAccessMediaLocationEnabled": true
+        }
       ]
     ]
   }

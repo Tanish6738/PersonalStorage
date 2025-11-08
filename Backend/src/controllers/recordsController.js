@@ -49,25 +49,78 @@ export const createRecord = async (req, res, next) => {
   }
 };
 
-// @desc    Get all work records
+// @desc    Get all work records with search, filter, and sort
 // @route   GET /api/records
 // @access  Public
 export const getAllRecords = async (req, res, next) => {
   try {
-    const { limit = 50, skip = 0, sort = '-createdAt' } = req.query;
+    const { 
+      limit = 50, 
+      skip = 0, 
+      sort = '-createdAt',
+      search = '',
+      startDate = '',
+      endDate = '',
+      minAmount = '',
+      maxAmount = ''
+    } = req.query;
 
-    const workRecords = await WorkRecord.find()
+    // Build query object
+    let query = {};
+
+    // Search functionality - search in title and description
+    if (search) {
+      query.$or = [
+        { title: { $regex: search, $options: 'i' } },
+        { description: { $regex: search, $options: 'i' } }
+      ];
+    }
+
+    // Date range filter
+    if (startDate || endDate) {
+      query.createdAt = {};
+      if (startDate) {
+        query.createdAt.$gte = new Date(startDate);
+      }
+      if (endDate) {
+        // Set to end of day
+        const end = new Date(endDate);
+        end.setHours(23, 59, 59, 999);
+        query.createdAt.$lte = end;
+      }
+    }
+
+    // Bill amount range filter
+    if (minAmount || maxAmount) {
+      query.billAmount = {};
+      if (minAmount) {
+        query.billAmount.$gte = parseFloat(minAmount);
+      }
+      if (maxAmount) {
+        query.billAmount.$lte = parseFloat(maxAmount);
+      }
+    }
+
+    const workRecords = await WorkRecord.find(query)
       .sort(sort)
       .limit(parseInt(limit))
       .skip(parseInt(skip));
 
-    const total = await WorkRecord.countDocuments();
+    const total = await WorkRecord.countDocuments(query);
 
     res.status(200).json({
       success: true,
       count: workRecords.length,
       total,
-      data: workRecords
+      data: workRecords,
+      filters: {
+        search,
+        startDate,
+        endDate,
+        minAmount,
+        maxAmount,
+        sort
+      }
     });
   } catch (error) {
     next(error);
@@ -97,7 +150,7 @@ export const getRecordById = async (req, res, next) => {
   }
 };
 
-// @desc    Update work record
+// @desc    Update work record (including images)
 // @route   PUT /api/records/:id
 // @access  Public
 export const updateRecord = async (req, res, next) => {
@@ -118,11 +171,36 @@ export const updateRecord = async (req, res, next) => {
     if (description !== undefined) workRecord.description = description;
     if (billAmount !== undefined) workRecord.billAmount = parseFloat(billAmount);
 
+    // Handle new images if uploaded
+    if (req.files && req.files.length > 0) {
+      // Delete old images from Cloudinary
+      if (workRecord.cloudinaryPublicIds && workRecord.cloudinaryPublicIds.length > 0) {
+        try {
+          await Promise.all(
+            workRecord.cloudinaryPublicIds.map(publicId =>
+              cloudinary.uploader.destroy(publicId)
+            )
+          );
+          console.log('✅ Old images deleted from Cloudinary');
+        } catch (error) {
+          console.error('⚠️  Error deleting old images from Cloudinary:', error.message);
+        }
+      }
+
+      // Add new images
+      const imageUrls = req.files.map(file => file.path);
+      const cloudinaryPublicIds = req.files.map(file => file.filename);
+      
+      workRecord.imageUrls = imageUrls;
+      workRecord.cloudinaryPublicIds = cloudinaryPublicIds;
+    }
+
     await workRecord.save();
 
     res.status(200).json({
       success: true,
-      data: workRecord
+      data: workRecord,
+      message: 'Record updated successfully'
     });
   } catch (error) {
     next(error);

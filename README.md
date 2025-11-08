@@ -4,7 +4,23 @@ Below is the updated documentation with **no authentication**, clear **API struc
 
 ## **Project Overview**
 
-This application allows a user to **record work details** with **images**, **bill information**, and the **date & time** of each entry. The user can take photos directly from the app, attach bill descriptions, and store everything in a centralized record list. All data will be stored in **MongoDB**, images will be uploaded to **Cloudinary**, and the app UI will be built using **Expo + React Native**.
+This application allows users to **record work details** with **images**, **bill information**, and **date & time** of each entry. Users can take photos, attach bill descriptions, and store everything in a centralized record list with **powerful search, filter, and edit capabilities**.
+
+### **✨ Key Features**
+
+- 📷 **Image Management**: Upload multiple images (up to 10) with automatic cloud storage
+- �️ **Full-Screen Viewer**: Tap any image to view in full-screen mode (NEW!)
+- 📥 **Download Images**: Save images to your device gallery (NEW!)
+- �📝 **Record Keeping**: Title, description, and bill amount tracking
+- 🔍 **Advanced Search**: Find records instantly by keywords in title or description
+- 📊 **Smart Sorting**: Sort by date, amount, or title (ascending/descending)
+- 🎛️ **Flexible Filtering**: Filter by date range and amount range
+- ✏️ **Easy Editing**: Update records with a tap, including image replacement
+- 📅 **Automatic Timestamps**: Track when records were created and updated
+- 📱 **Mobile-First Design**: Clean, intuitive UI built with React Native
+- ☁️ **Cloud Storage**: Images stored on Cloudinary, data in MongoDB Atlas
+
+All data is stored in **MongoDB**, images uploaded to **Cloudinary**, and the app UI built using **Expo + React Native**.
 
 ---
 
@@ -114,7 +130,7 @@ cd Frontend
 
 ```bash
 npm install axios expo-image-picker @react-navigation/native @react-navigation/native-stack
-npx expo install expo-camera react-native-screens react-native-safe-area-context
+npx expo install expo-camera react-native-screens react-native-safe-area-context expo-media-library expo-file-system
 ```
 
 4. **Create `.env` file in Frontend directory**
@@ -229,13 +245,15 @@ https://res.cloudinary.com/myapp/image/upload/v1699356000/work_records/photo_169
 
 ## **Backend API Endpoints**
 
+> 📘 **Full API Documentation**: See [`Backend/API_DOCUMENTATION.md`](Backend/API_DOCUMENTATION.md) for complete details, examples, and query parameters.
+
 ### **Base URL**
 
 ```
 http://localhost:5000/api
 ```
 
-### **Endpoints**
+### **Endpoints Overview**
 
 #### **1. Create a New Work Record**
 
@@ -244,248 +262,88 @@ POST /api/records
 Content-Type: multipart/form-data
 ```
 
-**Request Body (FormData):**
+**Features:**
+- Upload 1-10 images
+- Optional title field
+- Required description and bill amount
 
-| Field          | Type   | Required | Description                   |
-| -------------- | ------ | -------- | ----------------------------- |
-| `title`        | String | No       | Optional label for the record |
-| `description`  | String | Yes      | Work details/notes            |
-| `billAmount`   | Number | Yes      | Cost or billing value         |
-| `images`       | File[] | Yes      | One or multiple image files   |
-
-**Example Request (JavaScript):**
-
-```javascript
-const formData = new FormData();
-formData.append('title', 'Kitchen Renovation');
-formData.append('description', 'Installed new cabinets and countertops');
-formData.append('billAmount', 2500);
-
-// Append multiple images
-images.forEach((image, index) => {
-  formData.append('images', {
-    uri: image.uri,
-    type: 'image/jpeg',
-    name: `photo_${Date.now()}_${index}.jpg`
-  });
-});
-
-axios.post('http://localhost:5000/api/records', formData, {
-  headers: {
-    'Content-Type': 'multipart/form-data'
-  }
-});
-```
-
-**Response (201 Created):**
-
-```json
-{
-  "success": true,
-  "data": {
-    "_id": "64f5a1b2c3d4e5f6g7h8i9j0",
-    "title": "Kitchen Renovation",
-    "description": "Installed new cabinets and countertops",
-    "billAmount": 2500,
-    "imageUrls": [
-      "https://res.cloudinary.com/your-cloud/image/upload/v1234567890/work_records/photo1.jpg",
-      "https://res.cloudinary.com/your-cloud/image/upload/v1234567890/work_records/photo2.jpg"
-    ],
-    "createdAt": "2025-11-07T10:30:00.000Z"
-  }
-}
-```
-
----
-
-#### **2. Get All Work Records**
+#### **2. Get All Work Records (with Search, Filter & Sort)**
 
 ```http
 GET /api/records
 ```
 
-**Query Parameters (Optional):**
+**New Query Parameters:**
 
-| Parameter | Type   | Description                      |
-| --------- | ------ | -------------------------------- |
-| `limit`   | Number | Number of records (default: 50)  |
-| `skip`    | Number | Number of records to skip (pagination) |
-| `sort`    | String | Sort field (default: -createdAt) |
+| Parameter | Type | Description | Example |
+|-----------|------|-------------|---------|
+| `search` | string | Search in title/description | `?search=laptop` |
+| `sort` | string | Sort field (prefix `-` for desc) | `?sort=-billAmount` |
+| `startDate` | string | Filter from date | `?startDate=2025-01-01` |
+| `endDate` | string | Filter to date | `?endDate=2025-12-31` |
+| `minAmount` | number | Minimum bill amount | `?minAmount=1000` |
+| `maxAmount` | number | Maximum bill amount | `?maxAmount=50000` |
+| `limit` | number | Records per page (default: 50) | `?limit=20` |
+| `skip` | number | Pagination offset | `?skip=20` |
 
-**Example Request:**
+**Sort Options:**
+- `createdAt` / `-createdAt` - Date (oldest/newest)
+- `billAmount` / `-billAmount` - Amount (lowest/highest)
+- `title` / `-title` - Title (A-Z / Z-A)
 
-```javascript
-axios.get('http://localhost:5000/api/records?limit=10&skip=0');
+**Example Requests:**
+```bash
+# Search for "laptop" records
+GET /api/records?search=laptop
+
+# Get records between ₹5,000 and ₹50,000, sorted by highest amount
+GET /api/records?minAmount=5000&maxAmount=50000&sort=-billAmount
+
+# Get records from January 2025
+GET /api/records?startDate=2025-01-01&endDate=2025-01-31
+
+# Combined: Search + Filter + Sort
+GET /api/records?search=repair&minAmount=1000&sort=-createdAt&limit=10
 ```
 
-**Response (200 OK):**
-
-```json
-{
-  "success": true,
-  "count": 2,
-  "data": [
-    {
-      "_id": "64f5a1b2c3d4e5f6g7h8i9j0",
-      "title": "Kitchen Renovation",
-      "description": "Installed new cabinets and countertops",
-      "billAmount": 2500,
-      "imageUrls": [
-        "https://res.cloudinary.com/your-cloud/image/upload/v1234567890/work_records/photo1.jpg"
-      ],
-      "createdAt": "2025-11-07T10:30:00.000Z"
-    },
-    {
-      "_id": "64f5a1b2c3d4e5f6g7h8i9j1",
-      "title": "Plumbing Fix",
-      "description": "Fixed leaking pipe under sink",
-      "billAmount": 150,
-      "imageUrls": [
-        "https://res.cloudinary.com/your-cloud/image/upload/v1234567890/work_records/photo3.jpg"
-      ],
-      "createdAt": "2025-11-06T14:20:00.000Z"
-    }
-  ]
-}
-```
-
----
-
-#### **3. Get Single Work Record**
-
-```http
-GET /api/records/:id
-```
-
-**Example Request:**
-
-```javascript
-axios.get('http://localhost:5000/api/records/64f5a1b2c3d4e5f6g7h8i9j0');
-```
-
-**Response (200 OK):**
-
-```json
-{
-  "success": true,
-  "data": {
-    "_id": "64f5a1b2c3d4e5f6g7h8i9j0",
-    "title": "Kitchen Renovation",
-    "description": "Installed new cabinets and countertops",
-    "billAmount": 2500,
-    "imageUrls": [
-      "https://res.cloudinary.com/your-cloud/image/upload/v1234567890/work_records/photo1.jpg",
-      "https://res.cloudinary.com/your-cloud/image/upload/v1234567890/work_records/photo2.jpg"
-    ],
-    "createdAt": "2025-11-07T10:30:00.000Z"
-  }
-}
-```
-
-**Error Response (404 Not Found):**
-
-```json
-{
-  "success": false,
-  "error": "Record not found"
-}
-```
-
----
-
-#### **4. Update Work Record**
+#### **3. Update Work Record (Enhanced)**
 
 ```http
 PUT /api/records/:id
-Content-Type: application/json
+Content-Type: multipart/form-data OR application/json
 ```
 
-**Request Body (JSON):**
+**What's New:**
+- ✅ Can update text fields only (JSON)
+- ✅ Can replace images (multipart/form-data)
+- ✅ Old images automatically deleted from Cloudinary when replaced
 
-```json
+**Example - Update text only:**
+```javascript
+PUT /api/records/64f5a1b2c3d4e5f6g7h8i9j0
 {
   "title": "Updated Title",
-  "description": "Updated description",
   "billAmount": 3000
 }
 ```
 
-**Note:** Images cannot be updated via this endpoint. To change images, delete and create a new record.
-
-**Example Request:**
-
+**Example - Update with new images:**
 ```javascript
-axios.put('http://localhost:5000/api/records/64f5a1b2c3d4e5f6g7h8i9j0', {
-  title: 'Kitchen Complete Renovation',
-  billAmount: 3000
-});
+const formData = new FormData();
+formData.append('title', 'Updated Title');
+formData.append('description', 'Updated description');
+formData.append('billAmount', 3000);
+formData.append('images', imageFile1);
+formData.append('images', imageFile2);
 ```
 
-**Response (200 OK):**
+#### **4. Other Endpoints**
 
-```json
-{
-  "success": true,
-  "data": {
-    "_id": "64f5a1b2c3d4e5f6g7h8i9j0",
-    "title": "Kitchen Complete Renovation",
-    "description": "Installed new cabinets and countertops",
-    "billAmount": 3000,
-    "imageUrls": [
-      "https://res.cloudinary.com/your-cloud/image/upload/v1234567890/work_records/photo1.jpg"
-    ],
-    "createdAt": "2025-11-07T10:30:00.000Z"
-  }
-}
-```
+- `GET /api/records/:id` - Get single record
+- `DELETE /api/records/:id` - Delete record (and images)
+- `GET /api/records/stats` - Get statistics (total records, bill amounts)
 
----
-
-#### **5. Delete Work Record**
-
-```http
-DELETE /api/records/:id
-```
-
-**Example Request:**
-
-```javascript
-axios.delete('http://localhost:5000/api/records/64f5a1b2c3d4e5f6g7h8i9j0');
-```
-
-**Response (200 OK):**
-
-```json
-{
-  "success": true,
-  "message": "Record deleted successfully"
-}
-```
-
-**Note:** This will also delete associated images from Cloudinary.
-
----
-
-### **Error Responses**
-
-All endpoints return consistent error responses:
-
-```json
-{
-  "success": false,
-  "error": "Error message description"
-}
-```
-
-**Common Status Codes:**
-
-- `200` - Success
-- `201` - Created
-- `400` - Bad Request (validation error)
-- `404` - Not Found
-- `500` - Internal Server Error
-
----
+📘 **See [Backend/API_DOCUMENTATION.md](Backend/API_DOCUMENTATION.md) for complete API reference with all examples and responses.**
 
 ---
 
@@ -550,12 +408,12 @@ All endpoints return consistent error responses:
   /.env
   /src
     /screens
-      HomeScreen.js          # List all work records
+      HomeScreen.js          # List all work records with search, filter, sort
       AddRecordScreen.js     # Create new record with images
+      EditRecordScreen.js    # Edit existing records (NEW!)
       RecordDetailScreen.js  # View full record details
     /components
       RecordCard.js          # Single record item
-      ImagePicker.js         # Image selection component
     /services
       api.js                 # API call functions
     /utils
@@ -564,13 +422,14 @@ All endpoints return consistent error responses:
   package.json
 ```
 
-### **Screens to Build**
+### **Screens**
 
-| Screen                       | Purpose                                                     | Features                                              |
-| ---------------------------- | ----------------------------------------------------------- | ----------------------------------------------------- |
-| **Home / List Screen**       | Displays work records list with date & preview image       | Pull-to-refresh, infinite scroll, search              |
-| **Add Record Screen**        | Capture images, input details, enter bill amount            | Camera access, gallery picker, form validation        |
-| **Record Details Screen**    | Show full images, date, description, bill info              | Image carousel, edit/delete options                   |
+| Screen | Purpose | Features |
+|--------|---------|----------|
+| **Home / List Screen** | Displays work records list | 🔍 Search bar, 📊 Sort/filter modal, Pull-to-refresh, Infinite scroll |
+| **Add Record Screen** | Create new records | 📷 Camera/gallery, Form validation, Multi-image upload |
+| **Edit Record Screen** | Modify existing records | ✏️ Edit all fields, Replace images, Pre-filled form |
+| **Record Details Screen** | View full record | 🖼️ Image carousel, 🔍 Full-screen viewer, 📥 Download images, Edit/delete buttons, Full details |
 
 ### **Key Frontend Libraries**
 
@@ -1086,12 +945,38 @@ EXPO_PUBLIC_API_URL=http://localhost:5000/api
 1. ✅ Set up MongoDB Atlas account
 2. ✅ Create Cloudinary account and get credentials
 3. ✅ Install backend dependencies and configure `.env`
-4. ✅ Test API endpoints using Postman
+4. ✅ Test API endpoints using Postman (see [`Backend/POSTMAN_TESTING_GUIDE.md`](Backend/POSTMAN_TESTING_GUIDE.md))
 5. ✅ Create Expo frontend app
 6. ✅ Implement screens and connect to API
-7. ✅ Test on physical device
-8. ✅ Deploy backend to Render/Railway
-9. ✅ Build mobile app with EAS
+7. ✅ Test search, filter, and edit features
+8. ✅ Test on physical device
+9. ✅ Deploy backend to Render/Railway
+10. ✅ Build mobile app with EAS
+
+---
+
+## **📚 Documentation**
+
+- 📘 **[API Documentation](Backend/API_DOCUMENTATION.md)** - Complete API reference with examples
+- 📖 **[Features Guide](FEATURES_GUIDE.md)** - User guide for search, sort, filter, and edit
+- �️ **[Image Viewer Guide](IMAGE_VIEWER_GUIDE.md)** - Full-screen viewer and download features (NEW!)
+- �🗺️ **[Folder Management Roadmap](FOLDER_MANAGEMENT_ROADMAP.md)** - Future feature implementation plan
+- 📋 **[Implementation Summary](IMPLEMENTATION_SUMMARY.md)** - Complete list of changes and features
+- 🧪 **[Postman Testing Guide](Backend/POSTMAN_TESTING_GUIDE.md)** - API testing instructions
+
+---
+
+## **🔜 Coming Soon - Folder Management**
+
+The next major update will include:
+
+- 📁 **Create custom folders** - Organize records by category
+- 🏷️ **Categorize records** - Assign records to folders
+- 🎨 **Color-coded folders** - Visual organization
+- 📊 **Per-folder statistics** - Track spending by category
+- 🔍 **Filter by folder** - Quick access to related records
+
+See the complete [Folder Management Roadmap](FOLDER_MANAGEMENT_ROADMAP.md) for details.
 
 ---
 
@@ -1106,4 +991,4 @@ EXPO_PUBLIC_API_URL=http://localhost:5000/api
 
 ---
 
-**Last Updated**: November 7, 2025
+**Last Updated**: November 8, 2025 | **Version**: 2.1

@@ -12,6 +12,7 @@ import {
 } from 'react-native';
 import { formatCurrency, formatDate } from '../utils/dateFormat';
 import { recordsAPI } from '../services/api';
+import ImageViewer from '../components/ImageViewer';
 
 const { width } = Dimensions.get('window');
 
@@ -19,6 +20,8 @@ const RecordDetailScreen = ({ route, navigation }) => {
   const { record } = route.params;
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [deleting, setDeleting] = useState(false);
+  const [imageViewerVisible, setImageViewerVisible] = useState(false);
+  const [viewerInitialIndex, setViewerInitialIndex] = useState(0);
 
   const handleDelete = () => {
     Alert.alert(
@@ -51,6 +54,11 @@ const RecordDetailScreen = ({ route, navigation }) => {
         },
       ]
     );
+  };
+
+  const openImageViewer = (index) => {
+    setViewerInitialIndex(index);
+    setImageViewerVisible(true);
   };
 
   const renderImagePagination = () => {
@@ -89,12 +97,21 @@ const RecordDetailScreen = ({ route, navigation }) => {
               }}
             >
               {record.imageUrls.map((url, index) => (
-                <Image
+                <TouchableOpacity
                   key={index}
-                  source={{ uri: url }}
-                  style={styles.image}
-                  resizeMode="cover"
-                />
+                  activeOpacity={0.9}
+                  onPress={() => openImageViewer(index)}
+                >
+                  <Image
+                    source={{ uri: url }}
+                    style={styles.image}
+                    resizeMode="cover"
+                  />
+                  {/* Fullscreen Icon Hint */}
+                  <View style={styles.fullscreenHint}>
+                    <Text style={styles.fullscreenHintText}>🔍 Tap to view fullscreen</Text>
+                  </View>
+                </TouchableOpacity>
               ))}
             </ScrollView>
             {renderImagePagination()}
@@ -139,6 +156,14 @@ const RecordDetailScreen = ({ route, navigation }) => {
           {/* Action Buttons */}
           <View style={styles.actions}>
             <TouchableOpacity
+              style={[styles.button, styles.editButton]}
+              onPress={() => navigation.navigate('EditRecord', { record })}
+            >
+              <Text style={styles.buttonIcon}>✏️</Text>
+              <Text style={styles.buttonText}>Edit Record</Text>
+            </TouchableOpacity>
+            
+            <TouchableOpacity
               style={[styles.button, styles.deleteButton]}
               onPress={handleDelete}
               disabled={deleting}
@@ -157,6 +182,14 @@ const RecordDetailScreen = ({ route, navigation }) => {
 
         <View style={styles.bottomPadding} />
       </ScrollView>
+
+      {/* Image Viewer Modal */}
+      <ImageViewer
+        visible={imageViewerVisible}
+        imageUrls={record.imageUrls || []}
+        initialIndex={viewerInitialIndex}
+        onClose={() => setImageViewerVisible(false)}
+      />
     </View>
   );
 };
@@ -212,6 +245,22 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 14,
     fontWeight: '600',
+  },
+  fullscreenHint: {
+    position: 'absolute',
+    bottom: 16,
+    left: 0,
+    right: 0,
+    alignItems: 'center',
+  },
+  fullscreenHintText: {
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
+    color: '#fff',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
+    fontSize: 12,
+    fontWeight: '500',
   },
   content: {
     backgroundColor: '#fff',
@@ -271,6 +320,9 @@ const styles = StyleSheet.create({
     padding: 16,
     borderRadius: 8,
     marginBottom: 12,
+  },
+  editButton: {
+    backgroundColor: '#2563eb',
   },
   deleteButton: {
     backgroundColor: '#ef4444',

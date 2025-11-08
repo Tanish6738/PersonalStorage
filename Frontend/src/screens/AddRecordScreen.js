@@ -60,8 +60,7 @@ const AddRecordScreen = ({ navigation }) => {
 
     const result = await ImagePicker.launchCameraAsync({
       quality: 0.8,
-      allowsEditing: true,
-      aspect: [4, 3],
+      allowsEditing: false, // No cropping - user gets full image
     });
 
     if (!result.canceled) {
